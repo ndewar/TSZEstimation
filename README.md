@@ -1,4 +1,5 @@
 # TSZEstimation
+[![DOI](https://zenodo.org/badge/176624943.svg)](https://zenodo.org/badge/latestdoi/176624943)
 Code and data repository for manuscript submitted to GRL
 
 mainPublication.m is the matlab script needed to produce all of the results and figures of the manuscript.
