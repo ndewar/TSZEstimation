@@ -1,6 +1,7 @@
 [![DOI](https://zenodo.org/badge/176624943.svg)](https://zenodo.org/badge/latestdoi/176624943) <div itemscope itemtype="https://schema.org/Person"><a itemprop="sameAs" content="https://orcid.org/0000-0002-2750-2866" href="https://orcid.org/0000-0002-2750-2866" target="orcid.widget" rel="noopener noreferrer" style="vertical-align:top;"><img src="https://orcid.org/sites/default/files/images/orcid_16x16.png" style="width:1em;margin-right:.5em;" alt="ORCID iD icon">orcid.org/0000-0002-2750-2866</a></div>
 # TSZEstimation
-Code and data repository for manuscript submitted to GRL
+Code and data repository for manuscript submitted to Geophysical Research Letters.
+The submitted manuscript covers the developement and testing of a novel geophysical methodology capable of estimating the depth to the top of the saturated zone from airborne electromagnetic data.
 
 mainPublication.m is the matlab script needed to produce all of the results and figures of the manuscript.
 
