@@ -20,7 +20,7 @@
 clear
 
 % load the data
-load('MatlabData.mat');
+load('MatlabData2.mat');
 
 % collect the layer depths
 layerDepths=[0;cumsum(THICKNESS(2:end))];
@@ -48,11 +48,11 @@ clear THICKNESS
 clear estWatertable statsArray
 
 % set some arrays up
-statsArray=cell(methods_to_try,numel(estimationLocations{:,1}));
-estWatertable=zeros(numel(windowDistance),numel(estimationLocations{:,1}),methods_to_try/2);
+statsArray=cell(methods_to_try,size(resArray,2));
+estWatertable=zeros(numel(windowDistance),size(resArray,2),methods_to_try/2);
 
 for k=1:numel(windowDistance)    
-for i=1:numel(estimationLocations{:,1})
+for i=1:size(resArray,2)
     
     % load from stored arrays the res and subsample depths
     tempRes=resArray{k,i};
@@ -102,40 +102,13 @@ clear current_*  i j k m ii tempRes ...
 % clear some variables just cause
 clear bestOne
 
-% set how far from the wells the estimations points are allowed to be and
-% set up some arrays
-validationBuffer=2000;
-validationDate=datetime(2015,9,10);
+% set up some stuff we need
 index=1:methods_to_try/2;
-
-% set what windows to use and the validation dataset
 windows_to_use=1:numel(windowDistance);
-estimationWells_used=estimationWells(estimationLocations{1:numel(estimationWells{:,1}),end}<validationBuffer,:);
-estimationWellsTID_used=estimationWellsTID(estimationLocations{numel(estimationWells{:,1})+1:end,end}<validationBuffer,:);
-
-% filter to only the wells that were measured in october
-estimationWells_used=estimationWells_used(estimationWells_used{:,8}>validationDate,:);
-estimationWellsTID_used=estimationWellsTID_used(estimationWellsTID_used{:,5}>validationDate,:);
-
-% remove wells with Q for questionable quality
-estimationWellsTID_used(estimationWellsTID_used{:,6}==8,:)=[];
-validationData=[estimationWells_used.WSEL*0.3048;estimationWellsTID_used.WSEL]';
-
-% get the DEM for the wells
-estimationWells_usedDem=[estimationWells_used{:,13}*0.3048;estimationWellsTID_used.GSE];
-
-% restrict the estimation locations to be within the validation buffer
-index_to_use=estimationLocations{:,end}<validationBuffer;
-dateIndex=[estimationWells{:,8}>validationDate;estimationWellsTID{:,5}>validationDate];
-index_to_use=logical(max(index_to_use+dateIndex-1,0));
-
-% Remove the same wells that have a questionable quality rating given by
-% TID as above, but from the estimation locations
-index_to_use(11)=0; index_to_use(17)=0; index_to_use(30)=0;
 
 % bootstrap to see how many calibration wells are needed
 number_to_use=1:10;
-bootstrap=1;
+bootstrap=0;
 bootstrapIters=10000;
 
 % set up some arrays
@@ -151,7 +124,7 @@ if bootstrap
         curr_index=randi(26,number_to_use(k),1);
         validationDataCurrent=validationData(curr_index);
             for m=1:numel(windows_to_use)
-                currWatertable=estWatertable(windows_to_use(m),index_to_use,:);
+                currWatertable=estWatertable(windows_to_use(m),:,:);
                 currWatertable=currWatertable(:,curr_index,:);
                 for i=1:length(estWatertable(1,1,:))
                     meanError(i,m)=mean(abs(currWatertable(:,:,i)-validationDataCurrent));
@@ -169,12 +142,12 @@ if bootstrap
     end
 else
     for m=1:numel(windows_to_use)
-        currWatertable=estWatertable(windows_to_use(m),index_to_use,:);
+        currWatertable=estWatertable(windows_to_use(m),:,:);
         for i=1:length(estWatertable(1,1,:))
-            meanError(i,m)=mean(abs(estWatertable(windows_to_use(m),index_to_use,i)-validationData));
-            madError(i,m)=median(abs(estWatertable(windows_to_use(m),index_to_use,i)-validationData));
-            rmsError(i,m)=rms(estWatertable(windows_to_use(m),index_to_use,i)-validationData);
-            mdl=fitlm(validationData,estWatertable(windows_to_use(m),index_to_use,i));
+            meanError(i,m)=mean(abs(estWatertable(windows_to_use(m),:,i)-validationData));
+            madError(i,m)=median(abs(estWatertable(windows_to_use(m),:,i)-validationData));
+            rmsError(i,m)=rms(estWatertable(windows_to_use(m),:,i)-validationData);
+            mdl=fitlm(validationData,estWatertable(windows_to_use(m),:,i));
             rSquared(i,m)=mdl.Rsquared.ordinary;
         end
     bestOne(1,m)=min(rmsError(:,m));
@@ -189,11 +162,10 @@ end
 bestMethod=bestOne(5,min(bestOne(1,:))==bestOne(1,:));
 finalWindow_to_use=sum((1:numel(windowDistance)).*double(min(bestOne(1,:))==bestOne(1,:)));
 clear final_estimate
-finalEstimate=estWatertable(finalWindow_to_use,index_to_use,bestMethod);
+finalEstimate=estWatertable(finalWindow_to_use,:,bestMethod);
 
 % make variables for depth below the surface
-finalEstimateDepth=estimationLocations.dem(index_to_use)'-finalEstimate;
-validation_data_depth=estimationWells_usedDem'-validationData;
+finalEstimateDepth=estimationLocations.dem(:)'-finalEstimate;
 
 % find out the size of the skytem pickle for each estimation depth/location
 layerThickness=layerBottoms-layerTops;
@@ -258,7 +230,7 @@ xlim([min(windowDistance) max(windowDistance)]);
 % code for figure 3
 figure(3)
 set(gcf,'pos',[100 100 1000 900]);
-scatter(validationData,finalEstimate,60,estimationLocations.distance(index_to_use),'filled'); hold on;
+scatter(validationData,finalEstimate,60,estimationLocations.distance(:),'filled'); hold on;
 plot(0:0.1:100,0:0.1:100,'-r')
 errorbar(validationData,finalEstimate,finalEstimateResolution,'b','LineStyle','none');
 h=colorbar; ylabel(h, 'Separation distance, meters');
